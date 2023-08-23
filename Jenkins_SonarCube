@@ -1,0 +1,25 @@
+pipeline {
+    agent any
+    tools {
+        maven 'Maven' 
+        }
+    stages {
+        stage('GetCode') {
+            steps {
+                git branch: 'main', url: 'https://github.com/Muhammad-Awab/java_maven.git'
+            }
+        }
+        stage('Build'){
+            steps {
+                sh 'mvn clean install'
+            }
+        }
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('sonarcube-9.9.0'){
+                    sh "mvn sonar:sonar"
+                }
+            }
+        }
+    }
+}
