@@ -1,0 +1,47 @@
+pipeline {
+    agent any
+    tools {
+        maven 'Maven' 
+    }
+    stages{
+        stage('GetCode'){
+            steps{
+                git 'https://github.com/Muhammad-Awab/docker-project'
+                
+            }
+        }
+        stage('mvn package'){
+            steps{
+                sh 'mvn clean install'
+            }
+        }
+        stage('Sonarqube Anaylsis'){
+            steps{
+                withSonarQubeEnv('sonarcube-9.9.0'){
+                    sh "mvn sonar:sonar"
+                }
+            }
+        }
+        stage('BuildDockerImage'){
+            steps{
+                sh 'docker image build -t awab82002/sonar-image:latest'
+            }
+        }
+        stage('Push Image'){
+            steps{
+                withCredentials([string(credentialsId: 'HubPWd', variable: 'HubPWd')]) {
+                sh "docker login -u 82002 -p ${HubPWd}"
+                }
+                sh 'docker push awab82002/sonar-image:latest'
+            }
+        }
+        stage('Create Container'){
+            steps{
+                sshagent(['ssh-agent']) {
+                 sh 'ssh -o StrictHostKeyChecking=no ubuntu@54.224.204.179 docker run -p 8000:80 -d --name docker-container awab82002/sonar-image:latest'
+              }
+            }
+        }
+        
+    }
+}
